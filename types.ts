@@ -21,6 +21,10 @@ export interface Donation {
   condition: ItemCondition;
   photo: string; // Base64 data URL
   createdAt: Date;
+  donorName: string;
+  donorEmail: string;
+  donorPhone: string;
+  donorLocation: string;
 }
 
 export interface Request {
@@ -28,6 +32,10 @@ export interface Request {
   category: ItemCategory;
   description: string;
   createdAt: Date;
+  requesterName: string;
+  requesterEmail: string;
+  requesterPhone: string;
+  requesterLocation: string;
 }
 
 export interface User {

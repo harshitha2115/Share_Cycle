@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import DonationCard, { CategoryIcon } from './components/DonationCard';
-import { Donation, Request, View, ItemCategory, ItemCondition, User } from './types';
+import { Donation, Request, View, ItemCategory, User } from './types';
 import { CATEGORIES } from './constants';
 import DonationForm from './components/DonationForm';
 import RequestForm from './components/RequestForm';
@@ -10,24 +11,8 @@ import AdminMatcher from './components/AdminMatcher';
 import { SearchIcon } from './components/Icons';
 import Modal from './components/Modal';
 import Login from './components/Login';
-
-// Mock Data
-const initialDonations: Donation[] = [
-    { id: 'd1', category: ItemCategory.Electronics, description: '24-inch Dell Monitor, works perfectly', condition: ItemCondition.Good, photo: 'https://images.pexels.com/photos/1029757/pexels-photo-1029757.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1', createdAt: new Date('2023-10-01') },
-    { id: 'd2', category: ItemCategory.Furniture, description: 'Sturdy wooden desk with three drawers', condition: ItemCondition.LikeNew, photo: 'https://images.pexels.com/photos/1148955/pexels-photo-1148955.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1', createdAt: new Date('2023-10-02') },
-    { id: 'd3', category: ItemCategory.Clothing, description: "Men's winter jacket, size Large", condition: ItemCondition.Good, photo: 'https://images.pexels.com/photos/52573/winter-jacket-winter-clothes-jacket-52573.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1', createdAt: new Date('2023-10-03') },
-    { id: 'd4', category: ItemCategory.Books, description: 'Collection of 5 classic novels, paperback', condition: ItemCondition.Fair, photo: 'https://images.pexels.com/photos/220326/pexels-photo-220326.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1', createdAt: new Date('2023-10-04') },
-    { id: 'd5', category: ItemCategory.Kitchenware, description: 'Complete set of pots and pans', condition: ItemCondition.LikeNew, photo: 'https://images.pexels.com/photos/6605207/pexels-photo-6605207.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1', createdAt: new Date('2023-10-05') },
-    { id: 'd6', category: ItemCategory.Electronics, description: 'Old but functional laser printer', condition: ItemCondition.Fair, photo: 'https://images.pexels.com/photos/265076/pexels-photo-265076.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1', createdAt: new Date('2023-10-06') },
-];
-
-const initialRequests: Request[] = [
-    { id: 'r1', category: ItemCategory.Electronics, description: 'Need a computer monitor for remote work.', createdAt: new Date() },
-    { id: 'r2', category: ItemCategory.Furniture, description: 'Looking for a small desk for my child to do homework.', createdAt: new Date() },
-    { id: 'r3', category: ItemCategory.Clothing, description: 'I need a warm coat for the upcoming winter season.', createdAt: new Date() },
-    { id: 'r4', category: ItemCategory.Books, description: 'Any fiction books would be appreciated to start a small library.', createdAt: new Date() },
-];
-
+import { api } from './services/api';
+import FullScreenSpinner from './components/FullScreenSpinner';
 
 const PageWrapper: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
@@ -40,21 +25,45 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
-  const [donations, setDonations] = useState<Donation[]>(initialDonations);
-  const [requests, setRequests] = useState<Request[]>(initialRequests);
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<ItemCategory | 'all'>('all');
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
 
+  useEffect(() => {
+    if (currentUser) {
+      const fetchData = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const [donationsData, requestsData] = await Promise.all([
+            api.getDonations(),
+            api.getRequests()
+          ]);
+          setDonations(donationsData);
+          setRequests(requestsData);
+        } catch (err) {
+          setError("Failed to load application data. Please try refreshing the page.");
+          console.error(err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchData();
+    }
+  }, [currentUser]);
+
+
   const handleSetView = (view: View) => {
-    // Role-based access control
     if (view === 'admin' && currentUser?.role !== 'admin') {
       setCurrentView('home');
       return;
     }
      if ((view === 'donate' || view === 'request') && !currentUser) {
-      // In a real app you might show a login modal
       alert("Please log in to access this feature.");
       return;
     }
@@ -69,23 +78,18 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setCurrentUser(null);
     setCurrentView('home');
+    setDonations([]);
+    setRequests([]);
+    setIsLoading(true);
   }
 
-  const addDonation = (donation: Omit<Donation, 'id' | 'createdAt'>) => {
-    const newDonation: Donation = {
-        ...donation,
-        id: `d${Date.now()}`,
-        createdAt: new Date(),
-    };
+  const addDonation = async (donation: Omit<Donation, 'id' | 'createdAt'>) => {
+    const newDonation = await api.addDonation(donation);
     setDonations(prev => [newDonation, ...prev]);
   };
 
-  const addRequest = (request: Omit<Request, 'id' | 'createdAt'>) => {
-      const newRequest: Request = {
-          ...request,
-          id: `r${Date.now()}`,
-          createdAt: new Date(),
-      };
+  const addRequest = async (request: Omit<Request, 'id' | 'createdAt'>) => {
+      const newRequest = await api.addRequest(request);
       setRequests(prev => [newRequest, ...prev]);
   };
 
@@ -98,13 +102,28 @@ const App: React.FC = () => {
   if (!currentUser) {
     return <Login onLogin={handleLogin} />;
   }
+  
+  if (isLoading) {
+    return <FullScreenSpinner />;
+  }
+
+  if (error) {
+    return (
+       <div className="min-h-screen flex items-center justify-center">
+         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md max-w-md text-center">
+            <strong className="font-bold">Error:</strong>
+            <span className="block sm:inline"> {error}</span>
+         </div>
+       </div>
+    )
+  }
 
   const renderView = () => {
     switch (currentView) {
       case 'donate':
-        return <PageWrapper title="Submit a Donation"><DonationForm addDonation={addDonation} setCurrentView={handleSetView} /></PageWrapper>;
+        return <PageWrapper title="Submit a Donation"><DonationForm addDonation={addDonation} setCurrentView={handleSetView} currentUser={currentUser} /></PageWrapper>;
       case 'request':
-        return <PageWrapper title="Submit a Request"><RequestForm addRequest={addRequest} setCurrentView={handleSetView} /></PageWrapper>;
+        return <PageWrapper title="Submit a Request"><RequestForm addRequest={addRequest} setCurrentView={handleSetView} currentUser={currentUser} /></PageWrapper>;
       case 'contact':
         return <PageWrapper title="Contact Us"><ContactForm /></PageWrapper>;
       case 'admin':
@@ -170,9 +189,13 @@ const App: React.FC = () => {
                                 <span className="text-sm font-semibold uppercase px-3 py-1 bg-secondary-light text-secondary-dark rounded-full">{selectedDonation.condition}</span>
                             </div>
                             
-                            <div className="pt-4 border-t border-neutral-200">
-                                {/* Fix: Corrected typo from toLocaleDateString() to toLocaleDateString() */}
-                                <p className="text-sm text-neutral-500 mt-2">Donated on: {selectedDonation.createdAt.toLocaleDateString()}</p>
+                            <div className="pt-4 border-t border-neutral-200 space-y-2">
+                                <p className="text-sm text-neutral-600">
+                                    <span className="font-semibold">Location:</span> {selectedDonation.donorLocation}
+                                </p>
+                                <p className="text-sm text-neutral-500">
+                                    Donated on: {selectedDonation.createdAt.toLocaleDateString()}
+                                </p>
                             </div>
                         </div>
                     </div>

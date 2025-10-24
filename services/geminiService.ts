@@ -30,10 +30,11 @@ export const findDonationMatches = async (donations: Donation[], requests: Reque
     2.  **Analyze Descriptions:** Carefully read the donation description and the request's need description to find the best fit based on keywords, context, and implied needs.
     3.  **Exclusive Matching:** A single donation item can only be matched to one request. Choose the best request for each item.
     4.  **No Suitable Match:** If no donation is a good fit for a request, you must indicate that.
+    5.  **Consider Location:** If donor and requester locations are provided, try to match items within similar areas to make logistics easier, but this is a lower priority than category and description.
 
     **Input Data:**
-    Donations: ${JSON.stringify(donations.map(d => ({id: d.id, category: d.category, description: d.description})))}
-    Requests: ${JSON.stringify(requests.map(r => ({id: r.id, category: r.category, description: r.description})))}
+    Donations: ${JSON.stringify(donations.map(d => ({id: d.id, category: d.category, description: d.description, donorLocation: d.donorLocation})))}
+    Requests: ${JSON.stringify(requests.map(r => ({id: r.id, category: r.category, description: r.description, requesterLocation: r.requesterLocation})))}
 
     Respond with your matches. For each match, provide a confidence score (high, medium, or low) and a brief, clear reasoning for your choice.
   `;

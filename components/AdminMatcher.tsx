@@ -9,7 +9,7 @@ interface AdminMatcherProps {
 }
 
 const ArrowRightIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>
     </svg>
 );
@@ -59,14 +59,38 @@ const MatchItemCard: React.FC<{ item: Donation | Request | null; type: 'Donation
         )
     }
     
+    if (type === 'Donation') {
+        const donationItem = item as Donation;
+        return (
+            <div className="bg-neutral-100 p-4 rounded-lg h-full border border-neutral-200 flex flex-col">
+                <h4 className="font-bold text-neutral-700 mb-2">Donation:</h4>
+                <p className="text-sm text-neutral-500 mb-1">Category: {donationItem.category}</p>
+                <p className="text-neutral-800 text-sm mb-2 flex-grow">"{donationItem.description}"</p>
+                <div className="pt-2 mt-auto border-t border-neutral-200 text-xs text-neutral-600 space-y-1">
+                    <p><strong>Donor:</strong> {donationItem.donorName}</p>
+                    <p><strong>Email:</strong> <a href={`mailto:${donationItem.donorEmail}`} className="text-primary-DEFAULT hover:underline">{donationItem.donorEmail}</a></p>
+                    <p><strong>Phone:</strong> <a href={`tel:${donationItem.donorPhone}`} className="text-primary-DEFAULT hover:underline">{donationItem.donorPhone}</a></p>
+                    <p><strong>Location:</strong> {donationItem.donorLocation}</p>
+                </div>
+            </div>
+        )
+    }
+
+    const requestItem = item as Request;
     return (
-        <div className="bg-neutral-100 p-4 rounded-lg h-full border border-neutral-200">
+        <div className="bg-neutral-100 p-4 rounded-lg h-full border border-neutral-200 flex flex-col">
             <h4 className="font-bold text-neutral-700 mb-2">{type}:</h4>
-            <p className="text-sm text-neutral-500 mb-1">Category: {item.category}</p>
-            <p className="text-neutral-800 text-sm">"{item.description}"</p>
+            <p className="text-sm text-neutral-500 mb-1">Category: {requestItem.category}</p>
+            <p className="text-neutral-800 text-sm mb-2 flex-grow">"{requestItem.description}"</p>
+            <div className="pt-2 mt-auto border-t border-neutral-200 text-xs text-neutral-600 space-y-1">
+                <p><strong>Requester:</strong> {requestItem.requesterName}</p>
+                <p><strong>Email:</strong> <a href={`mailto:${requestItem.requesterEmail}`} className="text-primary-DEFAULT hover:underline">{requestItem.requesterEmail}</a></p>
+                <p><strong>Phone:</strong> <a href={`tel:${requestItem.requesterPhone}`} className="text-primary-DEFAULT hover:underline">{requestItem.requesterPhone}</a></p>
+                <p><strong>Location:</strong> {requestItem.requesterLocation}</p>
+            </div>
         </div>
     )
-  }
+}
 
 const AdminMatcher: React.FC<AdminMatcherProps> = ({ donations, requests }) => {
   const [matches, setMatches] = useState<MatchResult[]>([]);

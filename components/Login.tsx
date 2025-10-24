@@ -1,11 +1,7 @@
+
 import React, { useState } from 'react';
 import { User } from '../types';
-
-// Mock user database
-const users: User[] = [
-  { id: 'u1', name: 'Admin User', email: 'admin@sharecycle.com', role: 'admin' },
-  { id: 'u2', name: 'Regular User', email: 'user@sharecycle.com', role: 'user' },
-];
+import { api } from '../services/api';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -15,17 +11,24 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = users.find(u => u.email === email);
-
-    // In a real app, you would also check the password against a hash
-    if (user) {
-      setError('');
-      onLogin(user);
-    } else {
-      setError('Invalid email or password.');
+    setIsLoading(true);
+    setError('');
+    try {
+        const user = await api.login(email, password);
+        if (user) {
+          onLogin(user);
+        } else {
+          setError('Invalid email or password.');
+        }
+    } catch (err) {
+        setError('An error occurred during login. Please try again.');
+        console.error(err);
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -35,7 +38,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <h1 className="text-4xl font-bold text-primary-dark text-center">
             Share<span className="text-neutral-700">Cycle</span>
         </h1>
-        <p className="text-center text-neutral-600 mt-2 mb-8">Welcome back! Please sign in to continue.</p>
+        <p className="text-center text-neutral-600 mt-2 mb-8">Welcome! Please sign in to continue.</p>
       </div>
 
       <div className="max-w-sm w-full bg-neutral-50 p-8 rounded-xl shadow-lg border border-neutral-200">
@@ -53,7 +56,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm placeholder-neutral-400 focus:outline-none focus:ring-primary-DEFAULT focus:border-primary-DEFAULT sm:text-sm"
+                disabled={isLoading}
+                className="appearance-none block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm placeholder-neutral-400 focus:outline-none focus:ring-primary-DEFAULT focus:border-primary-DEFAULT sm:text-sm disabled:bg-neutral-200"
               />
             </div>
           </div>
@@ -71,7 +75,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm placeholder-neutral-400 focus:outline-none focus:ring-primary-DEFAULT focus:border-primary-DEFAULT sm:text-sm"
+                disabled={isLoading}
+                className="appearance-none block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm placeholder-neutral-400 focus:outline-none focus:ring-primary-DEFAULT focus:border-primary-DEFAULT sm:text-sm disabled:bg-neutral-200"
               />
             </div>
           </div>
@@ -81,9 +86,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-DEFAULT hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-DEFAULT transition-transform transform hover:scale-105"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-DEFAULT hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-DEFAULT transition-transform transform hover:scale-105 disabled:bg-neutral-400 disabled:cursor-not-allowed"
             >
-              Sign in
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
         </form>
